@@ -64,7 +64,7 @@ This will create some nice stuff:
 
 * You can get an array of options, ready to use with the 'select', 'select_tag', etc family of Rails helpers.
 
-   RelationshipStatus.to_a # [["Divorced", 4],["Married", 2],["Single", 1],["Widow", 3]]
+   RelationshipStatus.to_a # [["Single", 1],["Married", 2],["Widow", 3],["Divorced", 4]]
 
 * You can retrieve a list with values for a group of enumeration constants.
 
@@ -200,7 +200,7 @@ located on enumerations.'enumeration_name'.'key' :
 
 You can also translate specific values:
 
-  RelationshipStatis.t(1) # => 'Casado'
+  RelationshipStatus.t(1) # => 'Casado'
 
 == Installation
 

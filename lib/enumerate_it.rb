@@ -58,17 +58,38 @@
 # RelationshipsStatus::SINGLE # returns 1
 # RelationshipStatus::MARRIED # returns 2 and so on...
 #
+# - A string is obtained from its index with:
+#
+# RelationshipStatus.t 1 # "Single"
+# 
 # - You can retrieve a list with all the enumeration codes:
 #
 # RelationshipStatus.list # [1,2,3,4]
 #
 # You can get an array of options, ready to use with the 'select', 'select_tag', etc family of Rails helpers.
 #
-# RelationshipStatus.to_a # [["Divorced", 4],["Married", 2],["Single", 1],["Widow", 3]]
+# RelationshipStatus.to_a # [["Single", 1],["Married", 2],["Widow", 3],["Divorced", 4]]
+#
+# Strings are translated using I18n:
+# fr.yml locale
+#   enumerations:
+#     relationship_status:
+#       single: célibataire
+#       married: marié
+#       widow: veuf
+#       divorced: divorcé
+#
+# then if locale is 'fr', to_a will translate strings:
+#
+# RelationshipStatus.to_a # [["célibataire", 1],["marié", 2],["veuf", 3],["divorcé", 4]]
 #
 # You can retrive a list with values for a group of enumeration constants
 #
-# RelationshipStatus.valus_for %w(MARRIED SINGLE) # [2, 1]
+# RelationshipStatus.values_for %w(MARRIED SINGLE) # [2, 1]
+#
+# When strings are translated, values_for can find values from translated strings:
+#
+# RelationshipStatus.values_for 'marié,divorcé'.split(',') # [2, 4]
 #
 # - You can manipulate the has used to create the enumeration:
 #
@@ -187,7 +208,7 @@ module EnumerateIt
     end
 
     def self.list
-      enumeration.values.map { |value| value[0] }.sort
+      enumeration.values.map(&:first) #.sort
     end
 
     def self.enumeration
@@ -195,16 +216,16 @@ module EnumerateIt
     end
 
     def self.to_a
-      enumeration.values.map {|value| [translate(value[1]), value[0]] }.sort_by { |value| value[0] }
+      enumeration.values.map { |value| [translate(value[1]), value[0]] } # .sort_by { |value| value[0] }
     end
 
     def self.t(value)
-      target = to_a.detect { |item| item[1] == value }
+      target = to_a.rassoc(value)
       target ? target[0] : value
     end
 
-    def self.values_for(values)
-      values.map { |v| self.const_get(v.to_sym) }
+    def self.values_for(names)
+      names.map { |n| v = self.to_a.assoc(n) ; v ? v[1] : self.const_get(n.upcase.to_sym) }
     end
 
     def self.to_range
@@ -215,7 +236,7 @@ module EnumerateIt
     def self.translate(value)
       return value unless value.is_a? Symbol
 
-      default = value.to_s.gsub(/_/, ' ').split.map(&:capitalize).join(' ')
+      default = value.to_s.gsub(/_/, ' ').titlecase
       I18n.t("enumerations.#{self.name.underscore}.#{value.to_s.underscore}", :default => default)
     end
 
@@ -266,7 +287,7 @@ module EnumerateIt
     def create_enumeration_humanize_method(klass, attribute_name)
       class_eval do
         define_method "#{attribute_name}_humanize" do
-          values = klass.enumeration.values.detect { |v| v[0] == self.send(attribute_name) }
+          values = klass.enumeration.values.assoc(self.send(attribute_name))
 
           values ? klass.translate(values[1]) : nil
         end
